@@ -11,6 +11,7 @@ function CountryList(){
             .then((response) => {
                 if (response.status === 200) {
                     //console.log(response)
+                    console.log(response.data)
                     setCountries(response.data);
                 }
             })
@@ -26,10 +27,11 @@ function CountryList(){
     const addCountry = (item) => {
         axios.post('http://localhost:8080/api/countries', {
             "name": item.name,
-            "population": item.population
+            "population": item.population,
+            "selected":false
         })
             .then((response) => {
-                if (response.status === 200) {
+                if (response.status === 201) {
                     loadCountriesFromAPI();
                 }
             })
@@ -75,8 +77,6 @@ function CountryList(){
     }*/
 
     const selectCountry = (item) => {
-        console.log(item.id)
-        console.log(countries)
         axios.put(('http://localhost:8080/api/countries/' + item.id), {
             "name": item.name,
             "population":item.population,
@@ -93,7 +93,7 @@ function CountryList(){
     }
 
     const deleteCountry = (id) => {
-        axios.delete('http://' + id)
+        axios.delete('http://localhost:8080/api/countries/' + id)
             .then((response) => {
                 if (response.status === 200)
                     loadCountriesFromAPI()
@@ -108,24 +108,24 @@ function CountryList(){
         const name = event.target.elements.countryName.value
         const population = event.target.elements.population.value
 
-        /*if (name < 5) {
-            setError("Item title needs to be longer than 5 characters")
-            setCitizens([])
+        if (name < 4||name>56) {
+            setError("Shortest country name is 4 characters and longest country name is 56 characters")
+            setCountries([])
             return;
         }
-        if (country < 5) {
-            setError("Item description needs to be longer than 5 characters")
-            setCitizens([])
+        if (population<800||population>1439323776) {
+            setError("Smallest population is 800 and largest population is 1,439,323,776")
+            setCountries([])
             return;
-        }*/
+        }
         setError("")
         
-        /*addCitizen({
+        addCountry({
             "name": name,
-            "country": country
-        })*/
-        event.target.elements.name.value = ""
-        event.target.elements.country.value = ""
+            "population": population,
+        })
+        event.target.elements.countryName.value = ""
+        event.target.elements.population.value = ""
 
     }
 
@@ -154,7 +154,7 @@ function CountryList(){
         event.target.elements.country.value = ""
 
     } 
-    
+
     return(
         <div>
             
@@ -169,7 +169,7 @@ function CountryList(){
             <form onSubmit={handleCountrySubmit}>
                 <label>Name</label>
                 <input name="countryName"></input>
-                <label>Country</label>
+                <label>Population</label>
                 <input name="population"></input>
                 <button type="submit">Add</button>
             </form>
