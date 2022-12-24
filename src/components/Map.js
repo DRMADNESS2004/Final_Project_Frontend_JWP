@@ -18,7 +18,6 @@ function Map() {
                     })
                 }
             </Geographies>
-            
         </ComposableMap>
       </div>
     );

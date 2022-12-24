@@ -1,13 +1,13 @@
-import logo from './logo.svg';
+
 import './App.css';
-import { useEffect } from 'react';
-import axios from 'axios'
 import Map from './components/Map';
+import WorldList from './components/WorldList'
 
 function App() {
   return (
     <div>
       <Map/>
+      <WorldList/>
     </div>
   );
 }
