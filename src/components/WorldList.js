@@ -1,17 +1,33 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import Country from './Country';
+import React from 'react';
+import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { isForXStatement } from '@babel/types';
+import { boolean } from 'yargs';
 
-function CountryList(){
+function WorldList(){
     const [countries, setCountries] = useState([]);
     const [error, setError] = useState("");
+    const [possibleCountries,setPossibleCountries]=useState([])
+
+    const getPossibleCountries=()=>{
+        fetch('http://localhost:3004/countries',{
+            header:{
+                'Content-Type':'application/json',
+                'Accept':'application/json'  
+            }
+        })
+        .then((response)=>response.clone().json())
+        .then((myJson)=>{
+            setPossibleCountries(myJson)
+        })
+    }
 
     const loadCountriesFromAPI = () => {
         axios.get('http://localhost:8080/api/countries')
             .then((response) => {
                 if (response.status === 200) {
-                    //console.log(response)
-                    console.log(response.data)
                     setCountries(response.data);
                 }
             })
@@ -20,8 +36,20 @@ function CountryList(){
             })
     }
 
+    const [currCountry,setCurrCountry]=useState(0)
+    var countryId=0
+    const getCurrCountry=(name)=>{
+        countries.forEach((item)=>{
+            if(name==item.name){
+                countryId=item.id
+                setCurrCountry(countryId)
+            }
+        })
+    }
+
     useEffect(() => {
         loadCountriesFromAPI();
+        getPossibleCountries()
     }, [])
 
     const addCountry = (item) => {
@@ -40,10 +68,14 @@ function CountryList(){
             })
     }
 
-    /*const addCitizen = (item) => {
-        axios.post('http://localhost:8080/api/citizens', {
+    const [citizens, setCitizens] = useState([]);
+
+    const addCitizen = (item) => {
+        getCurrCountry(item.country)
+        console.log(item)
+        axios.post('http://localhost:8080/api/countries/'+countryId+'/citizens', {
             "name": item.name,
-            "country": item.country,
+            "selected": false,
             "job":{
                 "name":item.job.name,
                 "salary":item.job.salary,
@@ -51,16 +83,30 @@ function CountryList(){
             }
         })
             .then((response) => {
-                if (response.status === 200) {
-                    loadCountriesFromAPI();
+                if (response.status === 201) {
+                    axios.get('http://localhost:8080/api/countries/'+countryId+'/citizens')
+                        .then((response) => {
+                            if (response.status === 200) {
+                                setCitizens(response.data);
+                            }
+                        })
+                        .catch((error) => {
+                            setError(error.status + " error")
+                        })  
+                    loadCountriesFromAPI(); 
+                    /*setUpdate(<div>{countries.map((item)=>{
+                        return <Country country={item} selectCountry={selectCountry} deleteCountry={deleteCountry} citiz={citizens}/>
+                    })}</div>)*/
                 }
             })
             .catch((error) => {
                 setError(error.status + " error")
             })
+
+          
     }
 
-    const setCountry = (id, country) => {
+    /*const setCountry = (id, country) => {
         console.log(id)
         console.log(countries)
         axios.patch(('http://localhost:8080/api/citizens' + id), {
@@ -68,7 +114,7 @@ function CountryList(){
         })
             .then((response) => {
                 if (response.status === 200) {
-                    {func}
+                    loadCountriesFromAPI()
                 }
             })
             .catch((error) => {
@@ -108,8 +154,8 @@ function CountryList(){
         const name = event.target.elements.countryName.value
         const population = event.target.elements.population.value
 
-        if (name < 4||name>56) {
-            setError("Shortest country name is 4 characters and longest country name is 56 characters")
+        if (name.length < 4||name.length > 56) {
+            setError("Shortest country name is 4 characters and longest country name is 56 characters or country name needs to be valid")
             setCountries([])
             return;
         }
@@ -131,40 +177,109 @@ function CountryList(){
 
     const handleCitizenSubmit = (event) => {
         event.preventDefault();
-        const name = event.target.elements.name.value
+        const citizenName = event.target.elements.citizenName.value
         const country = event.target.elements.country.value
+        const job = event.target.elements.job.value
+        const salary = event.target.elements.salary.value
+        const weeklyHours = event.target.elements.weeklyHours.value
 
-        /*if (name < 5) {
-            setError("Item title needs to be longer than 5 characters")
-            setCitizens([])
+        var isExist=false;
+        possibleCountries.forEach((item)=>{
+            if(item.name==country){
+                isExist=true
+            }
+        })
+        if(!isExist){
+            setError("Country hasn't been added");
+            setCountries([])
             return;
         }
-        if (country < 5) {
-            setError("Item description needs to be longer than 5 characters")
-            setCitizens([])
+
+        if(job.length<3||job.length>40){
+            setError("Job name needs to be between 3 and 40 characters and needs to be vslid");
+            setCountries([])
+        }
+
+        if(salary<3||salary>1000000){
+            setError("Job name needs to be between 3 and 40 characters and needs to be vslid");
+            setCountries([])
+        }
+
+        if (weeklyHours <0 || weeklyHours > 100) {
+            setError("Weekly hours needs to be a valid number")
+            setCountries([])
             return;
-        }*/
+        }
         setError("")
         
-        /*addCitizen({
-            "name": name,
-            "country": country
-        })*/
-        event.target.elements.name.value = ""
+        addCitizen({
+            "name": citizenName,
+            "job": {
+                "name":job,
+                "salary":salary,
+                "weeklyHours":weeklyHours
+            },
+            "country":country
+        })
+        event.target.elements.citizenName.value = ""
         event.target.elements.country.value = ""
-
+        event.target.elements.job.value = ""
+        event.target.elements.salary.value = ""
+        event.target.elements.weeklyHours.value = ""
     } 
+    
+    /*const [update,setUpdate]=useState(<div>{countries.map((item)=>{
+        return <Country country={item} selectCountry={selectCountry} deleteCountry={deleteCountry} citiz={citizens}/>
+    })}</div>)*/
+    
+    const handleClick = geo => () => {
+        var countryName=document.getElementsByName("countryName")[0];
+        var country=document.getElementsByName("country")[0]
+        console.log(geo);
+        country.value=geo.name
+        countryName.value=geo.name
+
+        var population=document.getElementsByName("population")[0]
+        const populationExist=false;
+        possibleCountries.forEach((item)=>{
+            if(item.ISO3.substr(0,2)==geo["Alpha-2"]){
+                console.log(geo)
+                console.log(item)
+                population.value=item.population_density
+                populationExist=true
+            }
+        })
+        if(!populationExist){
+            population.value=0
+        }
+    }
 
     return(
         <div>
-            
-            <div>{error}</div>
             <div>
-                {countries.map((item)=>{
-                    //console.log(item)
-                    return <Country country={item} selectCountry={selectCountry} deleteCountry={deleteCountry}/>
-                })}
+                <ComposableMap width={1000}>
+                    <Geographies geography={"https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json"}>
+                        {({ geographies }) =>
+                            geographies.map((geo) => {
+                            return <Geography key={geo.rsmKey} geography={geo} 
+                            stroke="#000000"
+                            tabIndex={-1}
+                            style={{
+                                default: { outline: "none" },
+                                hover: { fill: "#255B52", transition: "0.3s" },
+                                pressed: { outline: "none" },
+                            }}
+                            onClick={handleClick(geo.properties)}/>
+                            })
+                        }
+                    </Geographies>
+                </ComposableMap>
             </div>
+            <div>{error}</div>
+            <div>{countries.map((item)=>{
+                return <Country country={item} selectCountry={selectCountry} deleteCountry={deleteCountry} citiz={citizens}/>
+            })}</div>
+            
             <h1>Add or Modify Countries</h1>
             <form onSubmit={handleCountrySubmit}>
                 <label>Name</label>
@@ -179,6 +294,8 @@ function CountryList(){
                 <input name="citizenName"></input>
                 <label>Country</label>
                 <input name="country"></input>
+                <label>Job</label>
+                <input name="job"></input>
                 <label>Salary</label>
                 <input name="salary"></input>
                 <label>Weekly Hours</label>
@@ -189,4 +306,4 @@ function CountryList(){
     )
 }
 
-export default CountryList;
+export default WorldList;

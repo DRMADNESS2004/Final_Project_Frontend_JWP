@@ -6,7 +6,7 @@ import WorldList from './components/WorldList'
 function App() {
   return (
     <div>
-      <Map/>
+      {/*<Map/>*/}
       <WorldList/>
     </div>
   );

@@ -2,8 +2,8 @@ import Citizen from './Citizen';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-function Country({country, selectCountry, deleteCountry}){
-    const [citizens, setCitizens] = useState([]);
+function Country({country, selectCountry, deleteCountry, citiz}){
+    const [citizens, setCitizens] = useState([citiz]);
     const [error, setError] = useState("");
 
     const loadCitizensFromAPI = () => {
